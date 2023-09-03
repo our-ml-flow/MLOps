@@ -72,7 +72,7 @@ def train_svd(df_raw):
         mlflow.log_metric("mae", mae)
 
     
-        mlflow.sklearn.log_model(best_model, artifact_path=model_name)
+        mlflow.sklearn.log_model(best_model, artifact_path="model")
 
     model_uri = "runs:/{}/model".format(run.info.run_id)
     registered_model=mlflow.register_model(model_uri,model_name)
