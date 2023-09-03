@@ -15,13 +15,12 @@ from module.utils import get_raw_data
 
 @flow
 def get_train_data():
-    end_date = date.today() 
+    end_date = date.today() - timedelta(days=1)
     start_date = end_date - timedelta(days=7)
-    print(start_date, end_date)
     return get_raw_data(start_date, end_date)
 
 @flow
-def train():
+def svd_train_flow():
     df_train_data = get_train_data()
     train_svd(df_train_data)
     
@@ -29,10 +28,10 @@ def train():
 if __name__=='__main__':
 
     deployment=Deployment.build_from_flow(
-        flow=train,
-        name='train_svd_weekly',
-        version=0.1,
+        flow=svd_train_flow,
+        name='Train_svd_weekly',
+        version=1.0,
         work_queue_name='training_agent',
-        schedule=(CronSchedule(cron="0 9 * * MON", timezone="Asia/Seoul"))
+        schedule=(CronSchedule(cron="15 11 * * MON", timezone="Asia/Seoul"))
     )
     deployment.apply()

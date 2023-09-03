@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import mlflow
 import optuna
+from datetime import date, timedelta
 
 
 def objective(trial, trainset, testset):
@@ -30,10 +31,14 @@ def objective(trial, trainset, testset):
 
 @task
 def train_svd(df_raw):
+    end_date = (date.today() - timedelta(days=1)).strftime('%y/%m/%d')
+    start_date = (date.today() - timedelta(days=7)).strftime('%y/%m/%d')
+    model_name = "svd_model"
+
     mlflow.set_tracking_uri('http://localhost:5000')
     print(f'tracking URI: {mlflow.get_tracking_uri()}')
 
-    mlflow.set_experiment('MLFLOW_Optuna_TEST_EXPERIMENT') 
+    mlflow.set_experiment('MLFLOW_NFT_RECSYS_EXPERIMENT') 
     reader = Reader(rating_scale=(0,1))
     data = Dataset.load_from_df(df_raw, reader)
     trainset, testset = train_test_split(data, test_size=0.2, random_state=12)
@@ -53,7 +58,7 @@ def train_svd(df_raw):
     best_model.fit(trainset)
     predictions = best_model.test(testset)
     
-    with mlflow.start_run():
+    with mlflow.start_run() as run:
         for key, value in best_params.items():
             mlflow.log_param(key, value)
         
@@ -65,6 +70,16 @@ def train_svd(df_raw):
         
         mlflow.log_metric("rmse", rmse)
         mlflow.log_metric("mae", mae)
-        mlflow.sklearn.log_model(best_model, "best_svd_model")
+
     
-    return 
+        mlflow.sklearn.log_model(best_model, artifact_path=model_name)
+
+    model_uri = "runs:/{}/model".format(run.info.run_id)
+    registered_model=mlflow.register_model(model_uri,model_name)
+    
+    client = mlflow.MlflowClient()
+    client.transition_model_version_stage(name=model_name, 
+                                        version=registered_model.version, 
+                                        stage="Production",
+                                        archive_existing_versions=True)
+    #client.update_registered_model(name='Daily_User_Based_Model', description=run.to_dictionary()['data']['tags']['mlflow.note.content'])
