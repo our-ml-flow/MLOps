@@ -27,9 +27,10 @@ def train():
     
 
 if __name__=='__main__':
+
     deployment=Deployment.build_from_flow(
         flow=train,
-        name='train',
+        name='train_svd_weekly',
         version=0.1,
         work_queue_name='training_agent',
         schedule=(CronSchedule(cron="0 9 * * MON", timezone="Asia/Seoul"))

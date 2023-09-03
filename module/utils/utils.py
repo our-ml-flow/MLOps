@@ -12,7 +12,7 @@ def get_raw_data(start_date, end_date):
     
     engine=SqlAlchemyConnector.load("gcp-mlops-sql-postgres").get_engine()
     connection = engine.connect()
-
+    
     try:
         query = f""" WITH owner_token_info AS (
                         SELECT 
@@ -22,7 +22,7 @@ def get_raw_data(start_date, end_date):
                             sum(num_distinct_tokens_owned) OVER (PARTITION BY owner_address) AS tot,
                             data_created_at::date AS created_at
                         FROM alchemy_collection_for_buyer
-                        WHERE data_created_at::date BETWEEN {start_date} AND {end_date}'
+                        WHERE data_created_at::date BETWEEN '{start_date}' AND '{end_date}'
                         )
                         SELECT 
                             owner_address, 
