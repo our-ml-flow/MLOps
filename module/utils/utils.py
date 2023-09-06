@@ -14,27 +14,48 @@ def get_raw_data(start_date, end_date):
     connection = engine.connect()
     
     try:
-        query = f""" WITH owner_token_info AS (
+        query = f"""
+                WITH 
+                    top_10_addresses AS (
+                        SELECT TRIM(nft_contract_address) AS top10
+                        FROM dune_nft_trades
+                        WHERE block_time BETWEEN '{start_date}' AND '{end_date}' 
+                        GROUP BY nft_contract_address
+                        ORDER BY sum(amount_usd) DESC 
+                        LIMIT 10
+                    ),
+                    owner_token_info AS (
                         SELECT 
                             owner_address,
+                            TRIM(contract->>'address') AS address,
                             collection_name AS collection,
                             num_distinct_tokens_owned AS num_token,
-                            sum(num_distinct_tokens_owned) OVER (PARTITION BY owner_address) AS tot,
-                            data_created_at::date AS created_at
+                            CASE 
+                                WHEN contract->>'address' IN (SELECT * FROM top_10_addresses) THEN 1.1 
+                                ELSE 1.0 
+                            END AS weight
                         FROM alchemy_collection_for_buyer
                         WHERE data_created_at::date BETWEEN '{start_date}' AND '{end_date}'
-                        )
-                        SELECT 
-                            owner_address, 
-                            collection,
-                            sum(num_token/tot) AS token_ratio
-                        FROM owner_token_info
-                        GROUP BY owner_address, collection, created_at
-                        ORDER BY owner_address;"""
+                    ),
+                    rawdata AS(
+                    SELECT owner_address,
+                    collection,
+                    num_token,
+                    sum(num_token) OVER (PARTITION BY owner_address) AS tot,
+                    weight
+                    FROM owner_token_info
+                    )
+                    SELECT owner_address,collection,
+                    (num_token/tot)*weight AS ratio
+                    FROM rawdata;
+                """
         
         result = connection.execute(text(query))
         rows=result.fetchall()
+        print(rows)
         df=pd.DataFrame(rows)
     except Exception as e:
         print("error", e)
+    finally:
+        connection.close()
     return df

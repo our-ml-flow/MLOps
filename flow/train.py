@@ -14,14 +14,10 @@ from module.utils import get_raw_data
 
 
 @flow
-def get_train_data():
+def svd_train_flow():
     end_date = date.today() - timedelta(days=1)
     start_date = end_date - timedelta(days=7)
-    return get_raw_data(start_date, end_date)
-
-@flow
-def svd_train_flow():
-    df_train_data = get_train_data()
+    df_train_data = get_raw_data(start_date, end_date)
     train_svd(df_train_data)
     
 
