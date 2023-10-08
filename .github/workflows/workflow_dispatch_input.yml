@@ -80,4 +80,3 @@ jobs:
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ github.event.inputs.pipeline }}:${{ github.event.inputs.docker_tag }} -f Dockerfile .
         docker push ${{ secrets.DOCKER_USERNAME }}/${{ github.event.inputs.pipeline }}:${{ github.event.inputs.docker_tag }}
-
